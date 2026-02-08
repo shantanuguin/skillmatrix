@@ -1,0 +1,764 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#f8fafc">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+
+    <title>Sidney Apparels - Manufacturing Portal</title>
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- GSAP & Plugins -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+
+    <!-- Lenis Scroll -->
+    <script src="https://cdn.jsdelivr.net/npm/@studio-freight/lenis@1.0.29/bundled/lenis.min.js"></script>
+
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet">
+
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#eef2ff',
+                            100: '#e0e7ff',
+                            200: '#c7d2fe',
+                            300: '#a5b4fc',
+                            400: '#818cf8',
+                            500: '#6366f1',
+                            600: '#4f46e5',
+                            700: '#4338ca',
+                            800: '#3730a3',
+                            900: '#312e81',
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        body {
+            background-color: #f8fafc;
+            color: #1e293b;
+            font-family: 'Inter', sans-serif;
+            overflow-x: hidden;
+        }
+
+        .glass-card {
+            background: rgba(255, 255, 255, 0.45);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.7);
+            border-radius: 2rem;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
+            transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1),
+                box-shadow 0.4s cubic-bezier(0.16, 1, 0.3, 1),
+                border-color 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .glass-card:hover {
+            box-shadow: 0 30px 60px rgba(0, 0, 0, 0.05);
+            border-color: rgba(255, 255, 255, 0.8);
+            transform: translateY(-2px);
+        }
+
+        .nav-link.active {
+            background: linear-gradient(135deg, rgba(79, 70, 229, 0.1) 0%, rgba(139, 92, 246, 0.1) 100%);
+            color: #4338ca;
+            font-weight: 600;
+            border-right: 4px solid #4f46e5;
+        }
+
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #e2e8f0;
+            border-radius: 10px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #cbd5e1;
+        }
+
+        .blob {
+            position: absolute;
+            filter: blur(100px);
+            z-index: -1;
+            opacity: 0.3;
+            border-radius: 50%;
+        }
+
+        .custom-cursor-dot {
+            width: 8px;
+            height: 8px;
+            background: #4f46e5;
+            position: fixed;
+            pointer-events: none;
+            z-index: 9999;
+            border-radius: 50%;
+        }
+
+        .custom-cursor-outline {
+            width: 40px;
+            height: 40px;
+            border: 2px solid rgba(79, 70, 229, 0.3);
+            position: fixed;
+            pointer-events: none;
+            z-index: 9998;
+            border-radius: 50%;
+            transition: transform 0.15s ease-out;
+        }
+
+        .stat-value {
+            background: linear-gradient(135deg, #1e293b 0%, #475569 100%);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        /* Performance Optimizations on Scroll */
+        .is-scrolling .glass-card {
+            backdrop-filter: none !important;
+            -webkit-backdrop-filter: none !important;
+            transition: none !important;
+        }
+
+        #appSidebar,
+        #appContent,
+        #mainApp {
+            transform: translateZ(0);
+            will-change: transform;
+        }
+
+        @media (max-width: 1024px) {
+
+            html,
+            body {
+                scroll-behavior: auto !important;
+            }
+
+            .glass-card {
+                backdrop-filter: none !important;
+                -webkit-backdrop-filter: none !important;
+            }
+        }
+
+        /* Snappy CSS Animations */
+        @keyframes slideUpFade {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+
+            to {
+                opacity: 1;
+            }
+        }
+
+        #appShell {
+            animation: fadeIn 0.4s ease-out forwards;
+        }
+
+        #appContent {
+            animation: slideUpFade 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+
+        .glass-card {
+            /* Staggered animation handled better by simple CSS delay or just let them all slide up together for speed */
+            animation: slideUpFade 0.6s cubic-bezier(0.16, 1, 0.3, 1) fill-mode-backwards;
+        }
+
+        /* Hardware acceleration */
+        #appSidebar,
+        #appContent,
+        #mainApp,
+        .glass-card {
+            transform: translateZ(0);
+            will-change: transform, opacity;
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            * {
+                animation: none !important;
+                transition: none !important;
+                scroll-behavior: auto !important;
+            }
+
+            .glass-card {
+                backdrop-filter: none !important;
+                -webkit-backdrop-filter: none !important;
+            }
+        }
+    </style>
+</head>
+
+<body class="antialiased selection:bg-indigo-100 selection:text-indigo-900">
+
+    <!-- Background Blobs (Static for perf) -->
+    <div class="fixed inset-0 pointer-events-none z-0 overflow-hidden">
+        <div class="blob bg-indigo-200 w-[600px] h-[600px] -top-48 -left-48"></div>
+        <div class="blob bg-purple-200 w-[500px] h-[500px] top-1/4 -right-24"></div>
+        <div class="blob bg-pink-100 w-[700px] h-[700px] -bottom-48 left-1/4"></div>
+        <div class="blob bg-blue-100 w-[400px] h-[400px] bottom-1/4 left-0"></div>
+    </div>
+
+    <div id="appShell" class="relative z-10 flex min-h-screen">
+
+        <!-- Sidebar Overlay (Mobile) -->
+        <div id="sidebarOverlay"
+            class="fixed inset-0 bg-slate-900/10 backdrop-blur-sm z-40 hidden opacity-0 transition-opacity duration-300 lg:hidden">
+        </div>
+
+        <!-- Sidebar -->
+        <aside id="appSidebar"
+            class="fixed lg:sticky top-0 left-0 h-screen w-80 bg-white/70 backdrop-blur-2xl border-r border-white/50 z-50 transform -translate-x-full lg:translate-x-0 transition-transform duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] flex flex-col shadow-2xl lg:shadow-none">
+
+            <!-- Logo Area -->
+            <div class="h-28 flex items-center px-10 border-b border-indigo-50/30">
+                <div class="flex items-center gap-4 group">
+                    <div
+                        class="w-12 h-12 rounded-2xl bg-gradient-to-br from-indigo-600 via-violet-600 to-purple-600 flex items-center justify-center text-white shadow-xl shadow-indigo-200 transition-transform duration-500">
+                        <i class="fas fa-industry text-xl"></i>
+                    </div>
+                    <div>
+                        <h1 class="font-extrabold text-slate-900 text-base tracking-tight leading-tight">
+                            SIDNEY<br>APPARELS</h1>
+                        <p class="text-[10px] text-slate-400 font-bold tracking-[0.2em] mt-1 uppercase">Operations Hub
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Navigation -->
+            <nav class="flex-1 py-10 px-6 space-y-2 overflow-y-auto custom-scroll">
+                <a href="index.html"
+                    class="nav-link group flex items-center gap-4 px-5 py-4 rounded-2xl text-sm font-semibold text-slate-500 hover:bg-white hover:text-indigo-600 hover:shadow-sm transition-all duration-300">
+                    <i data-lucide="layout-dashboard" class="w-5 h-5"></i>
+                    <span>Dashboard</span>
+                </a>
+                <a href="operators.html"
+                    class="nav-link group flex items-center gap-4 px-5 py-4 rounded-2xl text-sm font-semibold text-slate-500 hover:bg-white hover:text-indigo-600 hover:shadow-sm transition-all duration-300">
+                    <i data-lucide="users" class="w-5 h-5"></i>
+                    <span>Operators</span>
+                </a>
+                <a href="performance.html"
+                    class="nav-link group flex items-center gap-4 px-5 py-4 rounded-2xl text-sm font-semibold text-slate-500 hover:bg-white hover:text-indigo-600 hover:shadow-sm transition-all duration-300">
+                    <i data-lucide="bar-chart-3" class="w-5 h-5"></i>
+                    <span>Performance</span>
+                </a>
+                <a href="time-study.html"
+                    class="nav-link group flex items-center gap-4 px-5 py-4 rounded-2xl text-sm font-semibold text-slate-500 hover:bg-white hover:text-indigo-600 hover:shadow-sm transition-all duration-300">
+                    <i data-lucide="timer" class="w-5 h-5"></i>
+                    <span>Time Study</span>
+                </a>
+                <div class="pt-8 pb-4 px-5">
+                    <p class="text-[11px] font-black text-slate-400 uppercase tracking-widest pl-1">Resources</p>
+                </div>
+                <a href="grading-criteria.html"
+                    class="nav-link group flex items-center gap-4 px-5 py-4 rounded-2xl text-sm font-semibold text-slate-500 hover:bg-white hover:text-indigo-600 hover:shadow-sm transition-all duration-300">
+                    <i data-lucide="scroll-text" class="w-5 h-5"></i>
+                    <span>Grading System</span>
+                </a>
+            </nav>
+
+            <!-- User Info -->
+            <div class="p-8 border-t border-indigo-50/30">
+                <div class="flex items-center gap-4 p-4 rounded-3xl bg-slate-50/50 border border-white">
+                    <div
+                        class="w-10 h-10 rounded-2xl bg-indigo-100 flex items-center justify-center text-xs font-black text-indigo-600">
+                        SA</div>
+                    <div class="flex-1 min-w-0">
+                        <p class="text-xs font-black text-slate-800 truncate">Admin User</p>
+                        <p class="text-[10px] font-bold text-slate-400 truncate mt-0.5">admin@sidney.com</p>
+                    </div>
+                    <i data-lucide="log-out"
+                        class="w-4 h-4 text-slate-300 cursor-pointer hover:text-red-400 transition-colors"></i>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Content Area -->
+        <div id="appContent" class="flex-1 flex flex-col min-w-0">
+
+            <!-- Header -->
+            <header id="appHeader"
+                class="sticky top-0 z-30 px-10 py-6 bg-white/40 backdrop-blur-xl border-b border-white/50">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-6">
+                        <button id="sidebarToggle"
+                            class="lg:hidden p-3 rounded-2xl bg-white text-slate-600 shadow-sm border border-slate-100">
+                            <i data-lucide="menu" class="w-6 h-6"></i>
+                        </button>
+                        <h2 class="text-2xl font-black text-slate-900 tracking-tight hidden md:block">Dashboard Overview
+                        </h2>
+                    </div>
+
+                    <div class="flex items-center gap-4">
+                        <div
+                            class="hidden sm:flex items-center gap-3 px-4 py-2 rounded-2xl bg-indigo-50/50 border border-indigo-100/50">
+                            <i data-lucide="database" class="w-4 h-4 text-indigo-500"></i>
+                            <span class="text-[11px] font-black text-indigo-600 tracking-wider">v24.0 PLATINUM</span>
+                        </div>
+                        <div
+                            class="flex items-center gap-3 px-4 py-2 rounded-2xl bg-emerald-50/50 border border-emerald-100/50 shadow-sm">
+                            <div class="w-2 h-2 rounded-full bg-emerald-500 animate-ping"></div>
+                            <span class="text-[11px] font-black text-emerald-600 tracking-wider uppercase"
+                                id="lastSyncTime">LIVE SYNC</span>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Main App Area -->
+            <main id="mainApp" class="flex-1 p-8 md:p-12 space-y-10">
+
+                <!-- Advanced Search & Filter -->
+                <div class="glass-card p-5 flex flex-col lg:flex-row justify-between items-center gap-6">
+                    <div class="relative w-full lg:flex-1 max-w-2xl group">
+                        <i data-lucide="search"
+                            class="absolute left-5 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-indigo-500 transition-all duration-300 w-5 h-5"></i>
+                        <input type="text" placeholder="Search for operators, machines, or styles..."
+                            class="w-full bg-white/50 text-slate-800 pl-14 pr-6 py-4 rounded-2xl border border-slate-100 focus:outline-none focus:border-indigo-400 focus:ring-4 focus:ring-indigo-500/5 transition-all text-sm font-semibold placeholder:text-slate-400 placeholder:font-medium">
+                    </div>
+
+                    <div class="flex items-center gap-3 w-full lg:w-auto">
+                        <select id="dashboardLineFilter"
+                            class="bg-white/80 text-slate-800 px-5 py-3.5 rounded-2xl border border-white text-sm font-bold focus:outline-none focus:ring-4 focus:ring-indigo-500/5 transition-all flex-1 lg:flex-none cursor-pointer">
+                            <option value="">All Production Lines</option>
+                        </select>
+
+                        <select id="periodFilter"
+                            class="bg-white/80 text-slate-800 px-5 py-3.5 rounded-2xl border border-white text-sm font-bold focus:outline-none focus:ring-4 focus:ring-indigo-500/5 transition-all flex-1 lg:flex-none cursor-pointer">
+                            <option value="all" selected>All Time</option>
+                            <option value="week">Current Week</option>
+                            <option value="month">Current Month</option>
+                        </select>
+
+                        <button id="refreshBtn" onclick="location.reload()"
+                            class="bg-indigo-600 hover:bg-slate-900 text-white p-4 rounded-2xl shadow-xl shadow-indigo-100 transition-all duration-300">
+                            <i data-lucide="refresh-cw" class="w-5 h-5"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- KPI Bento Grid -->
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+                    <!-- Avg Efficiency -->
+                    <div class="glass-card p-8 group overflow-hidden relative">
+                        <div class="absolute -right-8 -top-8 w-32 h-32 bg-indigo-100 rounded-full opacity-40"></div>
+                        <div class="relative z-10">
+                            <div class="flex items-center gap-3 mb-6">
+                                <div
+                                    class="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center">
+                                    <i data-lucide="gauge" class="w-5 h-5"></i>
+                                </div>
+                                <span class="text-xs font-black text-indigo-400 uppercase tracking-widest">Avg
+                                    Efficiency</span>
+                            </div>
+                            <h3 class="text-5xl font-black text-slate-900 tracking-tighter" id="dashboardAvgEfficiency">
+                                0%</h3>
+                            <div class="mt-8 flex items-center gap-2">
+                                <span
+                                    class="px-2 py-1 rounded-md bg-emerald-50 text-[10px] font-black text-emerald-600 uppercase">Target
+                                    Met</span>
+                                <span class="text-[10px] font-bold text-slate-400">vs 85% goal</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Standard SMV -->
+                    <div class="glass-card p-8 group overflow-hidden relative border-t-4 border-t-violet-500/20">
+                        <div class="absolute -right-8 -top-8 w-32 h-32 bg-violet-100 rounded-full opacity-40"></div>
+                        <div class="relative z-10">
+                            <div class="flex items-center gap-3 mb-6">
+                                <div
+                                    class="w-10 h-10 rounded-xl bg-violet-50 text-violet-600 flex items-center justify-center">
+                                    <i data-lucide="ruler" class="w-5 h-5"></i>
+                                </div>
+                                <span class="text-xs font-black text-violet-400 uppercase tracking-widest">Standard
+                                    SMV</span>
+                            </div>
+                            <h3 class="text-5xl font-black text-slate-900 tracking-tighter" id="dashboardAvgSMV">0.00
+                            </h3>
+                            <div class="mt-8 flex items-center gap-2">
+                                <span class="text-[10px] font-bold text-slate-500 italic">Industry Benchmark</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Working SMV -->
+                    <div class="glass-card p-8 group overflow-hidden relative border-t-4 border-t-pink-500/20">
+                        <div class="absolute -right-8 -top-8 w-32 h-32 bg-pink-100 rounded-full opacity-40"></div>
+                        <div class="relative z-10">
+                            <div class="flex items-center gap-3 mb-6">
+                                <div
+                                    class="w-10 h-10 rounded-xl bg-pink-50 text-pink-600 flex items-center justify-center">
+                                    <i data-lucide="activity" class="w-5 h-5"></i>
+                                </div>
+                                <span class="text-xs font-black text-pink-400 uppercase tracking-widest">Working
+                                    SMV</span>
+                            </div>
+                            <h3 class="text-5xl font-black text-slate-900 tracking-tighter" id="dashboardAvgWorkingSMV">
+                                0.00</h3>
+                            <div class="mt-8 flex items-center gap-2 text-pink-600 font-black text-[10px] uppercase">
+                                <i data-lucide="zap" class="w-3 h-3"></i> Real-time Load
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Active Production -->
+                    <div class="glass-card p-8 group overflow-hidden relative border-t-4 border-t-emerald-500/20">
+                        <div class="absolute -right-8 -top-8 w-32 h-32 bg-emerald-100 rounded-full opacity-40"></div>
+                        <div class="relative z-10">
+                            <div class="flex items-center gap-3 mb-6">
+                                <div
+                                    class="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
+                                    <i data-lucide="factory" class="w-5 h-5"></i>
+                                </div>
+                                <span class="text-xs font-black text-emerald-400 uppercase tracking-widest">Active
+                                    Lines</span>
+                            </div>
+                            <h3 class="text-5xl font-black text-slate-900 tracking-tighter" id="headerActiveLines">0
+                            </h3>
+                            <div class="mt-8 flex items-center gap-2 text-emerald-500 font-bold text-[10px]">
+                                <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                                Fully Operational
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Main Vision Charts -->
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    <!-- Chart 1 -->
+                    <div class="glass-card p-8 min-h-[400px]">
+                        <div class="flex items-center justify-between mb-10">
+                            <div class="flex items-center gap-4">
+                                <div
+                                    class="w-12 h-12 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center shadow-inner">
+                                    <i data-lucide="pie-chart" class="w-6 h-6"></i>
+                                </div>
+                                <div>
+                                    <h3 class="text-lg font-black text-slate-900 tracking-tight">Efficiency Mix</h3>
+                                    <p class="text-xs font-bold text-slate-400">Distribution across performance tiers
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="relative h-[250px] px-4">
+                            <canvas id="efficiencyChart"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- Chart 2 -->
+                    <div class="glass-card p-8 min-h-[400px]">
+                        <div class="flex items-center justify-between mb-10">
+                            <div class="flex items-center gap-4">
+                                <div
+                                    class="w-12 h-12 rounded-2xl bg-violet-50 text-violet-600 flex items-center justify-center shadow-inner">
+                                    <i data-lucide="settings-2" class="w-6 h-6"></i>
+                                </div>
+                                <div>
+                                    <h3 class="text-lg font-black text-slate-900 tracking-tight">Machine Utilization
+                                    </h3>
+                                    <p class="text-xs font-bold text-slate-400">Global equipment performance</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="relative h-[250px] px-4">
+                            <canvas id="machinePerformanceChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Line Analytics (Grand Stand) -->
+                <div class="glass-card p-10">
+                    <div class="flex items-center justify-between mb-12">
+                        <div class="flex items-center gap-5">
+                            <div
+                                class="w-14 h-14 rounded-3xl bg-blue-50 text-blue-600 flex items-center justify-center shadow-lg shadow-blue-50/50">
+                                <i data-lucide="bar-chart-big" class="w-7 h-7"></i>
+                            </div>
+                            <div>
+                                <h3 class="text-xl font-black text-slate-900 tracking-tight">Global Line Performance
+                                    Analysis</h3>
+                                <p class="text-sm font-bold text-slate-400">Comparative efficiency metrics across all
+                                    active sectors</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="relative h-[350px]">
+                        <canvas id="linePerformanceChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Deep Intelligence Row -->
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 pb-12">
+                    <!-- Garment SMV AI -->
+                    <div class="glass-card p-10 lg:col-span-2">
+                        <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-12 gap-6">
+                            <div class="flex items-center gap-4">
+                                <div
+                                    class="w-12 h-12 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center">
+                                    <i data-lucide="brain" class="w-6 h-6"></i>
+                                </div>
+                                <div>
+                                    <h3 class="text-lg font-black text-slate-900 tracking-tight">Smart SMV Analysis</h3>
+                                    <p class="text-xs font-bold text-slate-400">Garment specific predictive modeling</p>
+                                </div>
+                            </div>
+                            <div class="bg-indigo-50/50 p-1.5 rounded-2xl flex gap-2 border border-white">
+                                <button id="btnStandardSMV"
+                                    class="px-6 py-2.5 rounded-xl text-xs font-black text-white bg-indigo-600 shadow-xl shadow-indigo-100 transition-all scale-100 hover:scale-105">STANDARD</button>
+                                <button id="btnWorkingSMV"
+                                    class="px-6 py-2.5 rounded-xl text-xs font-black text-slate-400 hover:text-slate-800 transition-all">WORKING</button>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
+                            <div class="space-y-6">
+                                <div>
+                                    <label
+                                        class="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em] pl-2 mb-3 block">Production
+                                        Sector</label>
+                                    <select id="combinedSMVLineSelect"
+                                        class="w-full bg-slate-50 border border-slate-100 text-slate-900 p-4 rounded-2xl focus:ring-4 focus:ring-indigo-100 text-sm font-black transition-all appearance-none cursor-pointer">
+                                        <option value="">Choose Line...</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label
+                                        class="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em] pl-2 mb-3 block">Style
+                                        Configuration</label>
+                                    <select id="combinedSMVStyleSelect" disabled
+                                        class="w-full bg-slate-50 border border-slate-100 text-slate-900 p-4 rounded-2xl text-sm font-black opacity-40 cursor-not-allowed">
+                                        <option value="">Choose Style...</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="relative group mt-4 md:mt-0">
+                                <div
+                                    class="absolute inset-0 bg-gradient-to-tr from-indigo-500 via-purple-500 to-pink-500 rounded-[2.5rem] blur-2xl opacity-10 group-hover:opacity-20 transition-all duration-700">
+                                </div>
+                                <div
+                                    class="relative h-48 bg-white border border-white rounded-[2.5rem] flex flex-col items-center justify-center shadow-xl shadow-indigo-50/50 transition-transform duration-500 hover:scale-[1.02]">
+                                    <span id="combinedSMVValue"
+                                        class="text-7xl font-black text-slate-900 tracking-tighter drop-shadow-sm stat-value">0.00</span>
+                                    <span id="combinedSMVLabel"
+                                        class="text-[11px] font-black text-slate-400 uppercase tracking-[0.3em] mt-3">MINUTES
+                                        / UNIT</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Skill Distribution -->
+                    <div class="glass-card p-8">
+                        <div class="flex items-center gap-4 mb-8">
+                            <div
+                                class="w-12 h-12 rounded-2xl bg-pink-50 text-pink-600 flex items-center justify-center">
+                                <i data-lucide="layers-3" class="w-6 h-6"></i>
+                            </div>
+                            <h3 class="text-lg font-black text-slate-900 tracking-tight whitespace-nowrap">Skill Groups
+                            </h3>
+                        </div>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div id="skillCardA"
+                                class="bg-emerald-50/70 border border-white p-6 rounded-3xl cursor-pointer hover:shadow-xl hover:shadow-emerald-50 transition-all group active:scale-95 text-center">
+                                <div class="text-3xl font-black text-emerald-600 mb-1" id="dashboardGroupACount">0</div>
+                                <div class="text-[11px] font-black text-emerald-800/40 uppercase tracking-widest">Grade
+                                    A</div>
+                            </div>
+                            <div id="skillCardB"
+                                class="bg-blue-50/70 border border-white p-6 rounded-3xl cursor-pointer hover:shadow-xl hover:shadow-blue-50 transition-all group active:scale-95 text-center">
+                                <div class="text-3xl font-black text-blue-600 mb-1" id="dashboardGroupBCount">0</div>
+                                <div class="text-[11px] font-black text-blue-800/40 uppercase tracking-widest">Grade B
+                                </div>
+                            </div>
+                            <div id="skillCardC"
+                                class="bg-orange-50/70 border border-white p-6 rounded-3xl cursor-pointer hover:shadow-xl hover:shadow-orange-50 transition-all group active:scale-95 text-center">
+                                <div class="text-3xl font-black text-orange-600 mb-1" id="dashboardGroupCCount">0</div>
+                                <div class="text-[11px] font-black text-orange-800/40 uppercase tracking-widest">Grade C
+                                </div>
+                            </div>
+                            <div id="skillCardD"
+                                class="bg-rose-50/70 border border-white p-6 rounded-3xl cursor-pointer hover:shadow-xl hover:shadow-rose-50 transition-all group active:scale-95 text-center">
+                                <div class="text-3xl font-black text-rose-600 mb-1" id="dashboardGroupDCount">0</div>
+                                <div class="text-[11px] font-black text-rose-800/40 uppercase tracking-widest">Grade D
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Actionable Alerts -->
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 pb-16">
+                    <!-- Bottlenecks -->
+                    <div class="glass-card p-8 border-l-[12px] border-l-orange-500/20">
+                        <div class="flex items-center justify-between mb-8">
+                            <div class="flex items-center gap-4">
+                                <div
+                                    class="w-12 h-12 rounded-2xl bg-orange-50 text-orange-500 flex items-center justify-center">
+                                    <i data-lucide="alert-octagon" class="w-6 h-6"></i>
+                                </div>
+                                <h3 class="text-lg font-black text-slate-900">Active Bottlenecks</h3>
+                            </div>
+                            <select id="bottleneckLineSelect"
+                                class="bg-white border border-orange-100 text-orange-700 text-[11px] font-black px-4 py-2 rounded-xl focus:outline-none">
+                                <option value="">ALL LINES</option>
+                            </select>
+                        </div>
+                        <div id="bottleneckList" class="space-y-3 max-h-[280px] overflow-y-auto pr-2 custom-scroll">
+                            <div
+                                class="text-sm font-bold text-slate-400 p-4 bg-slate-50/50 rounded-2xl border border-white">
+                                Initializing sector analysis...</div>
+                        </div>
+                    </div>
+
+                    <!-- Studies Count -->
+                    <div class="glass-card p-10 flex flex-col justify-between">
+                        <div>
+                            <div class="flex items-center justify-between mb-8">
+                                <h3 class="text-lg font-black text-slate-900 flex items-center gap-4">
+                                    <div
+                                        class="w-12 h-12 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center">
+                                        <i data-lucide="medal" class="w-6 h-6"></i>
+                                    </div>
+                                    Time Study Progress
+                                </h3>
+                                <select id="timeStudiesLineSelect"
+                                    class="bg-white border border-slate-100 text-slate-500 text-[11px] font-black px-4 py-2 rounded-xl focus:outline-none">
+                                    <option value="">Global View</option>
+                                </select>
+                            </div>
+                            <div class="flex items-end gap-3 mb-8">
+                                <span class="text-7xl font-black text-slate-900 leading-none tracking-tighter"
+                                    id="footerTimeStudiesCount">0</span>
+                                <span class="text-sm font-black text-slate-400 mb-2 uppercase tracking-widest">Studies
+                                    Completed</span>
+                            </div>
+                        </div>
+                        <div class="space-y-4">
+                            <div
+                                class="flex justify-between text-[11px] font-black text-indigo-500 uppercase tracking-widest">
+                                <span>Efficiency Optimization</span>
+                                <span>75% Target</span>
+                            </div>
+                            <div class="w-full h-4 bg-slate-100 rounded-full overflow-hidden p-1 border border-white">
+                                <div
+                                    class="h-full bg-gradient-to-r from-indigo-500 to-violet-500 w-3/4 rounded-full shadow-lg shadow-indigo-100">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- System Hidden IDs -->
+                <div class="hidden" aria-hidden="true">
+                    <div id="headerTotalOperators">0</div>
+                    <div id="headerTimeStudies">0</div>
+                    <div id="dashboardTotalOperations">0</div>
+                    <div id="dashboardTotalOperators">0</div>
+                    <div id="machineUsageList"></div>
+                    <!-- Virtual ID for JS compatibility -->
+                    <select id="operatorLineSelect"></select>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <!-- Magnetic Cursor -->
+    <div class="custom-cursor-dot hidden lg:block"></div>
+    <div class="custom-cursor-outline hidden lg:block"></div>
+
+    <!-- Intelligence Modal -->
+    <div id="skillGroupModal" class="fixed inset-0 z-[100] invisible opacity-0 transition-all duration-500">
+        <div class="absolute inset-0 bg-slate-900/40 backdrop-blur-md transition-opacity" id="modalOverlay"></div>
+        <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-3xl px-6">
+            <div
+                class="bg-white/90 backdrop-blur-2xl rounded-[3rem] shadow-2xl overflow-hidden flex flex-col max-h-[85vh] border border-white transform scale-90 transition-transform duration-500 ease-out shadow-indigo-200">
+                <div class="p-10 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+                    <div class="flex items-center gap-6">
+                        <div
+                            class="w-16 h-16 rounded-[1.5rem] bg-white text-indigo-600 shadow-xl shadow-indigo-50 flex items-center justify-center">
+                            <i data-lucide="users-2" class="w-8 h-8"></i>
+                        </div>
+                        <div>
+                            <h3 class="text-2xl font-black text-slate-900 tracking-tight">
+                                <span id="modalGroupName" class="text-indigo-600">Group A</span> Specialist Force
+                            </h3>
+                            <p class="text-sm font-bold text-slate-400 mt-1" id="modalGroupDesc">High-performance
+                                manufacturing experts</p>
+                        </div>
+                    </div>
+                    <button id="closeModal"
+                        class="w-12 h-12 rounded-2xl bg-white shadow-xl shadow-slate-100 flex items-center justify-center text-slate-400 hover:text-red-500 hover:rotate-90 transition-all duration-500">
+                        <i data-lucide="x" class="w-6 h-6"></i>
+                    </button>
+                </div>
+                <div class="p-10 overflow-y-auto custom-scroll flex-1">
+                    <div id="operatorListContent" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <!-- Intelligence injected via JS -->
+                    </div>
+                </div>
+                <div class="p-8 bg-slate-50/80 border-t border-slate-100 text-center">
+                    <span class="text-[11px] text-slate-400 font-extrabold uppercase tracking-[0.4em]"
+                        id="modalOperatorCount">0 OPERATIVES IDENTIFIED</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- App Engine -->
+    <script type="module" src="js/dashboard.js"></script>
+    <script>
+        // Init Lucide after render
+        window.addEventListener('load', () => {
+            if (typeof lucide !== 'undefined') lucide.createIcons();
+        });
+    </script>
+</body>
+
+</html>
