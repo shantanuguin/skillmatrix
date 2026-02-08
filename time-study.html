@@ -945,27 +945,7 @@
     <script type="module" src="js/time-study.js"></script>
     <script>
         // Initialize Lucide Icons
-        lucide.createIcons();
-
-        // Sidebar Toggle
-        const sidebar = document.getElementById('appSidebar');
-        const overlay = document.getElementById('sidebarOverlay');
-        const toggleBtn = document.getElementById('sidebarToggle');
-
-        function openSidebar() {
-            sidebar.classList.remove('-translate-x-full');
-            overlay.classList.remove('hidden');
-            setTimeout(() => overlay.classList.remove('opacity-0'), 10);
-        }
-
-        function closeSidebar() {
-            sidebar.classList.add('-translate-x-full');
-            overlay.classList.add('opacity-0');
-            setTimeout(() => overlay.classList.add('hidden'), 300);
-        }
-
-        toggleBtn?.addEventListener('click', openSidebar);
-        overlay?.addEventListener('click', closeSidebar);
+        if (typeof lucide !== 'undefined') lucide.createIcons();
     </script>
 </body>
 

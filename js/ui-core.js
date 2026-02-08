@@ -6,40 +6,70 @@
 export class NavigationSystem {
     constructor() {
         this.sidebar = document.getElementById('appSidebar');
-        this.toggleBtn = document.getElementById('sidebarToggle');
-        this.appContent = document.getElementById('appContent');
         this.overlay = document.getElementById('sidebarOverlay');
+        this.toggleButton = document.getElementById('sidebarToggle');
+        this.isOpen = false;
 
         this.init();
     }
 
     init() {
-        if (this.toggleBtn) {
-            this.toggleBtn.addEventListener('click', () => this.toggleSidebar());
-        }
+        if (!this.sidebar || !this.overlay || !this.toggleButton) return;
 
-        if (this.overlay) {
-            this.overlay.addEventListener('click', () => this.closeSidebar());
-        }
+        // Set initial state
+        this.updateState();
 
-        // Close on resize > md
-        window.addEventListener('resize', () => {
-            if (window.innerWidth >= 768) {
-                this.closeSidebar();
-            }
+        // Event listeners with cleanup logic (though unnecessary on page load)
+        this.toggleButton.onclick = (e) => {
+            e.stopPropagation();
+            this.toggle();
+        }; // Use onclick to override any previous listeners if possible, or just addEventListener
+        // Better stick to addEventListener but assume unique instantiation
+
+        // Actually, let's use addEventListener but careful about double binding.
+        // Since we are replacing the class, as long as it's instantiated once, we are good.
+        // We removed onclick from HTML, so no double binding there.
+
+        this.toggleButton.addEventListener('click', (e) => {
+            e.stopPropagation();
+            this.toggle();
         });
 
-        // Active link handling
+        this.overlay.addEventListener('click', () => this.close());
+
+        // Close on navigation link click for mobile
+        if (window.innerWidth < 1024) {
+            document.querySelectorAll('#appSidebar a').forEach(link => {
+                link.addEventListener('click', () => this.close());
+            });
+        }
+
+        // Close on Escape key
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && this.isOpen) this.close();
+        });
+
+        // Close on resize to desktop
+        window.addEventListener('resize', () => {
+            if (window.innerWidth >= 1024 && this.isOpen) this.close();
+        });
+
         this.highlightActiveLink();
     }
 
-    toggleSidebar() {
-        this.sidebar.classList.toggle('-translate-x-full');
-        this.overlay.classList.toggle('hidden');
-        this.overlay.classList.toggle('opacity-0');
+    open() {
+        this.sidebar.classList.remove('-translate-x-full');
+        this.overlay.classList.remove('hidden');
+
+        // Force reflow
+        void this.overlay.offsetWidth;
+
+        this.overlay.classList.remove('opacity-0');
+        document.body.classList.add('sidebar-open');
+        this.isOpen = true;
 
         // Animate links staggering in
-        if (!this.sidebar.classList.contains('-translate-x-full')) {
+        if (typeof gsap !== 'undefined') {
             gsap.fromTo('.nav-link',
                 { x: -20, opacity: 0 },
                 { x: 0, opacity: 1, duration: 0.4, stagger: 0.05, ease: 'power2.out' }
@@ -47,10 +77,31 @@ export class NavigationSystem {
         }
     }
 
-    closeSidebar() {
-        this.sidebar.classList.add('-translate-x-full');
-        this.overlay.classList.add('hidden');
+    close() {
         this.overlay.classList.add('opacity-0');
+        this.sidebar.classList.add('-translate-x-full');
+
+        // Wait for opacity transition before hiding
+        setTimeout(() => {
+            if (!this.isOpen) {
+                this.overlay.classList.add('hidden');
+                document.body.classList.remove('sidebar-open');
+            }
+        }, 300);
+
+        this.isOpen = false;
+    }
+
+    toggle() {
+        if (this.isOpen) {
+            this.close();
+        } else {
+            this.open();
+        }
+    }
+
+    updateState() {
+        this.isOpen = !this.sidebar.classList.contains('-translate-x-full');
     }
 
     highlightActiveLink() {
@@ -60,7 +111,6 @@ export class NavigationSystem {
         links.forEach(link => {
             if (link.getAttribute('href') === currentPath) {
                 link.classList.add('active', 'bg-indigo-50/50', 'text-indigo-600', 'border-r-4', 'border-indigo-600');
-                // Icon color
                 const icon = link.querySelector('i') || link.querySelector('svg');
                 if (icon) icon.classList.add('text-indigo-600');
             } else {

@@ -154,44 +154,9 @@ export function updateRealTimeClock() {
 }
 
 // Mobile Menu
+// Mobile Menu - DEPRECATED: Use NavigationSystem from ui-core.js
 export function setupMobileMenu() {
-    const toggle = document.getElementById('mobileMenuToggle');
-    const sidebar = document.getElementById('sidebar');
-    const overlay = document.getElementById('sidebarOverlay');
-
-    if (!toggle || !sidebar) return;
-
-    const closeMenu = () => {
-        sidebar.style.transform = 'translateX(-100%)';
-        if (overlay) overlay.classList.remove('active');
-        toggle.classList.remove('active');
-    };
-
-    const openMenu = () => {
-        sidebar.style.transform = 'translateX(0)';
-        if (overlay) overlay.classList.add('active');
-        toggle.classList.add('active');
-    };
-
-    toggle.addEventListener('click', (e) => {
-        e.stopPropagation();
-        if (sidebar.style.transform === 'translateX(0px)') {
-            closeMenu();
-        } else {
-            openMenu();
-        }
-    });
-
-    if (overlay) overlay.addEventListener('click', closeMenu);
-
-    window.addEventListener('resize', () => {
-        if (window.innerWidth > 768) {
-            sidebar.style.transform = 'translateX(0)';
-            if (overlay) overlay.classList.remove('active');
-        } else {
-            sidebar.style.transform = 'translateX(-100%)';
-        }
-    });
+    console.warn('setupMobileMenu is deprecated. Use NavigationSystem from ui-core.js instead.');
 }
 
 // Modal Utilities
