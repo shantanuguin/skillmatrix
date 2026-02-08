@@ -19,17 +19,7 @@ export class NavigationSystem {
         // Set initial state
         this.updateState();
 
-        // Event listeners with cleanup logic (though unnecessary on page load)
-        this.toggleButton.onclick = (e) => {
-            e.stopPropagation();
-            this.toggle();
-        }; // Use onclick to override any previous listeners if possible, or just addEventListener
-        // Better stick to addEventListener but assume unique instantiation
-
-        // Actually, let's use addEventListener but careful about double binding.
-        // Since we are replacing the class, as long as it's instantiated once, we are good.
-        // We removed onclick from HTML, so no double binding there.
-
+        // Event listener for sidebar toggle
         this.toggleButton.addEventListener('click', (e) => {
             e.stopPropagation();
             this.toggle();
