@@ -1,6 +1,5 @@
 import { subscribeToOperators, addPerformanceRecord, getLastPerformanceRecord } from './data-service.js';
-import { machineFamilies, showToast, updateRealTimeClock, formatTime, getElement, GENERAL_ALLOWANCE, populateMachineOptions } from './common.js?v=1.0.1';
-import { NavigationSystem } from './ui-core.js';
+import { machineFamilies, showToast, updateRealTimeClock, setupMobileMenu, formatTime, getElement, GENERAL_ALLOWANCE, populateMachineOptions } from './common.js?v=1.0.1';
 
 let operators = [];
 let startTime = 0;
@@ -15,7 +14,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Init common features
     updateRealTimeClock();
     setInterval(updateRealTimeClock, 1000);
-    new NavigationSystem();
+    setupMobileMenu();
 
     // Subscribe to data
     subscribeToOperators((data) => {

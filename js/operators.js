@@ -1,6 +1,5 @@
 import { subscribeToOperators, subscribeToPerformance, addOperator, updateOperator, deleteOperator, updatePerformanceRecord } from './data-service.js';
-import { supervisorMapping, getSupervisorForLine, showToast, updateRealTimeClock, setupModalListeners, openModal, closeModal, getElement, populateMachineOptions, machineFamilies } from './common.js?v=1.0.1';
-import { NavigationSystem } from './ui-core.js';
+import { supervisorMapping, getSupervisorForLine, showToast, updateRealTimeClock, setupMobileMenu, setupModalListeners, openModal, closeModal, getElement, populateMachineOptions, machineFamilies } from './common.js?v=1.0.1';
 
 let operators = [];
 let performanceData = [];
@@ -12,7 +11,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Init common features
     updateRealTimeClock();
     setInterval(updateRealTimeClock, 1000);
-    new NavigationSystem();
+    setupMobileMenu();
     setupModalListeners();
 
     // Subscribe to data

@@ -1,123 +1,145 @@
 
-// ui-core.js - Handles strict design system requirements: Navigation, Cursor, Lenis, GSAP
-
-/* global gsap, Lenis, SplitType, lucide */
+// ui-core.js — Retractable Sidebar Navigation System
+// Decoupled App Shell: self-contained class, paste into any page
 
 export class NavigationSystem {
     constructor() {
+        // DOM Cache — query once, never again
         this.sidebar = document.getElementById('appSidebar');
-        this.overlay = document.getElementById('sidebarOverlay');
-        this.toggleButton = document.getElementById('sidebarToggle');
+        this.toggleBtn = document.getElementById('sidebarToggle');
+        this.backdrop = document.getElementById('navBackdrop');
+        this.navLinks = document.querySelectorAll('.nav-link');
         this.isOpen = false;
 
         this.init();
     }
 
     init() {
-        if (!this.sidebar || !this.overlay || !this.toggleButton) return;
+        // 1. Resolve active page
+        this.resolveActiveState();
 
-        // Set initial state
-        this.updateState();
+        // 2. Toggle button (hamburger)
+        if (this.toggleBtn) {
+            this.toggleBtn.addEventListener('click', () => this.toggleSidebar());
+        }
 
-        // Event listener for sidebar toggle
-        this.toggleButton.addEventListener('click', (e) => {
-            e.stopPropagation();
-            this.toggle();
-        });
+        // 3. Click-away close (backdrop)
+        if (this.backdrop) {
+            this.backdrop.addEventListener('click', () => this.closeSidebar());
+        }
 
-        this.overlay.addEventListener('click', () => this.close());
-
-        // Close on navigation link click for mobile
-        if (window.innerWidth < 1024) {
-            document.querySelectorAll('#appSidebar a').forEach(link => {
-                link.addEventListener('click', () => this.close());
+        // 4. Close on nav link click (mobile UX)
+        this.navLinks.forEach(link => {
+            link.addEventListener('click', () => {
+                // Small delay so the user sees the active state before it closes
+                setTimeout(() => this.closeSidebar(), 120);
             });
-        }
+        });
 
-        // Close on Escape key
+        // 5. Escape key close (Accessibility)
         document.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape' && this.isOpen) this.close();
-        });
-
-        // Close on resize to desktop
-        window.addEventListener('resize', () => {
-            if (window.innerWidth >= 1024 && this.isOpen) this.close();
-        });
-
-        this.highlightActiveLink();
-    }
-
-    open() {
-        this.sidebar.classList.remove('-translate-x-full');
-        this.overlay.classList.remove('hidden');
-
-        // Force reflow
-        void this.overlay.offsetWidth;
-
-        this.overlay.classList.remove('opacity-0');
-        document.body.classList.add('sidebar-open');
-        this.isOpen = true;
-
-        // Animate links staggering in
-        if (typeof gsap !== 'undefined') {
-            gsap.fromTo('.nav-link',
-                { x: -20, opacity: 0 },
-                { x: 0, opacity: 1, duration: 0.4, stagger: 0.05, ease: 'power2.out' }
-            );
-        }
-    }
-
-    close() {
-        this.overlay.classList.add('opacity-0');
-        this.sidebar.classList.add('-translate-x-full');
-
-        // Wait for opacity transition before hiding
-        setTimeout(() => {
-            if (!this.isOpen) {
-                this.overlay.classList.add('hidden');
-                document.body.classList.remove('sidebar-open');
+            if (e.key === 'Escape' && this.isOpen) {
+                this.closeSidebar();
             }
-        }, 300);
+        });
 
-        this.isOpen = false;
+        // 6. Close on resize to desktop
+        window.addEventListener('resize', () => {
+            if (window.innerWidth >= 1024 && this.isOpen) {
+                this.closeSidebar();
+            }
+        });
+
+        // 7. Safe areas for notched devices
+        this.initSafeAreas();
+
+        // 8. Touch scrolling fix for iOS
+        this.setupScrollableNav();
     }
 
-    toggle() {
-        if (this.isOpen) {
-            this.close();
-        } else {
-            this.open();
-        }
-    }
+    // --- Active Link Detection ---
+    resolveActiveState() {
+        const currentPath = window.location.pathname;
+        const filename = currentPath.split('/').pop() || 'index.html';
 
-    updateState() {
-        this.isOpen = !this.sidebar.classList.contains('-translate-x-full');
-    }
-
-    highlightActiveLink() {
-        const currentPath = window.location.pathname.split('/').pop() || 'index.html';
-        const links = document.querySelectorAll('.nav-link');
-
-        links.forEach(link => {
-            if (link.getAttribute('href') === currentPath) {
-                link.classList.add('active', 'bg-indigo-50/50', 'text-indigo-600', 'border-r-4', 'border-indigo-600');
-                const icon = link.querySelector('i') || link.querySelector('svg');
+        this.navLinks.forEach(link => {
+            const href = link.getAttribute('href');
+            if (href === filename) {
+                // Active state
+                link.classList.add('active');
+                const icon = link.querySelector('i, svg');
                 if (icon) icon.classList.add('text-indigo-600');
             } else {
-                link.classList.remove('active', 'bg-indigo-50/50', 'text-indigo-600', 'border-r-4', 'border-indigo-600');
-                link.classList.add('text-slate-500', 'hover:bg-slate-50', 'hover:text-slate-900');
+                // Inactive state
+                link.classList.remove('active');
             }
         });
+    }
+
+    // --- Sidebar Control ---
+    toggleSidebar() {
+        if (this.isOpen) {
+            this.closeSidebar();
+        } else {
+            this.openSidebar();
+        }
+    }
+
+    openSidebar() {
+        this.isOpen = true;
+        this.sidebar.classList.add('open');
+        this.backdrop.classList.add('open');
+        this.toggleBtn.classList.add('open');
+        document.body.style.overflow = 'hidden'; // Lock body scroll
+    }
+
+    closeSidebar() {
+        this.isOpen = false;
+        this.sidebar.classList.remove('open');
+        this.backdrop.classList.remove('open');
+        this.toggleBtn.classList.remove('open');
+        document.body.style.overflow = ''; // Unlock body scroll
+    }
+
+    // --- Safe Area Injection (Notched Phones) ---
+    initSafeAreas() {
+        const style = document.createElement('style');
+        style.textContent = `
+            @supports (padding-top: env(safe-area-inset-top)) {
+                #appSidebar {
+                    padding-top: env(safe-area-inset-top);
+                    padding-bottom: env(safe-area-inset-bottom);
+                }
+                #appHeader {
+                    padding-left: max(2.5rem, env(safe-area-inset-left));
+                    padding-right: max(2.5rem, env(safe-area-inset-right));
+                }
+            }
+        `;
+        document.head.appendChild(style);
+    }
+
+    // --- Touch Scrolling Fix (iOS) ---
+    setupScrollableNav() {
+        const navContainer = this.sidebar?.querySelector('nav');
+        if (navContainer) {
+            navContainer.style.webkitOverflowScrolling = 'touch';
+            navContainer.style.overflowY = 'auto';
+        }
     }
 }
 
+// --- Custom Cursor (Desktop Only) ---
 export class Cursor {
     constructor() {
+        // Skip on touch devices
+        if ('ontouchstart' in window || navigator.maxTouchPoints > 0) return;
+
         this.cursorDot = document.createElement('div');
         this.cursorOutline = document.createElement('div');
 
-        this.cursorDot.className = 'fixed w-2 h-2 bg-indigo-600 rounded-full pointer-events-none z-[9999] mix-blend-difference hidden md:block';
-        this.cursorOutline.className = 'fixed w-8 h-8 border border-slate-400 rounded-full pointer-events-none z-[9999] opacity-50 transition-transform duration-300 hidden md:block';
+        this.cursorDot.className = 'cursor-dot';
+        this.cursorOutline.className = 'cursor-outline';
 
         document.body.appendChild(this.cursorDot);
         document.body.appendChild(this.cursorOutline);
@@ -126,90 +148,59 @@ export class Cursor {
     }
 
     init() {
-        // Move logic
+        let mouseX = 0, mouseY = 0;
+        let outlineX = 0, outlineY = 0;
+
+        // Dot follows instantly via transform
         window.addEventListener('mousemove', (e) => {
-            const posX = e.clientX;
-            const posY = e.clientY;
-
-            // Dot follows instantly
-            gsap.to(this.cursorDot, {
-                x: posX - 1,
-                y: posY - 1,
-                duration: 0.1,
-                ease: 'power2.out'
-            });
-
-            // Outline follows with lag
-            gsap.to(this.cursorOutline, {
-                x: posX - 16,
-                y: posY - 16,
-                duration: 0.5,
-                ease: 'power2.out'
-            });
+            mouseX = e.clientX;
+            mouseY = e.clientY;
+            this.cursorDot.style.transform = `translate(${mouseX - 4}px, ${mouseY - 4}px)`;
         });
 
-        // Hover effects
-        const interactiveElements = document.querySelectorAll('a, button, input, select, .cursor-pointer');
-        interactiveElements.forEach(el => {
-            el.addEventListener('mouseenter', () => this.scaleUp());
-            el.addEventListener('mouseleave', () => this.scaleDown());
-        });
-    }
+        // Outline follows with smooth lag via requestAnimationFrame
+        const animate = () => {
+            outlineX += (mouseX - outlineX) * 0.15;
+            outlineY += (mouseY - outlineY) * 0.15;
+            this.cursorOutline.style.transform = `translate(${outlineX - 16}px, ${outlineY - 16}px)`;
+            requestAnimationFrame(animate);
+        };
+        requestAnimationFrame(animate);
 
-    scaleUp() {
-        gsap.to(this.cursorOutline, {
-            scale: 1.5,
-            borderColor: '#4f46e5', // indigo-600
-            duration: 0.3
+        // Hover effects on interactive elements
+        document.addEventListener('mouseover', (e) => {
+            if (e.target.closest('a, button, input, select, .cursor-pointer, [role="button"]')) {
+                this.cursorOutline.classList.add('cursor-hover');
+                this.cursorDot.classList.add('cursor-hover');
+            }
         });
-        gsap.to(this.cursorDot, {
-            scale: 0.5,
-            duration: 0.3
-        });
-    }
-
-    scaleDown() {
-        gsap.to(this.cursorOutline, {
-            scale: 1,
-            borderColor: '#94a3b8', // slate-400
-            duration: 0.3
-        });
-        gsap.to(this.cursorDot, {
-            scale: 1,
-            duration: 0.3
+        document.addEventListener('mouseout', (e) => {
+            if (e.target.closest('a, button, input, select, .cursor-pointer, [role="button"]')) {
+                this.cursorOutline.classList.remove('cursor-hover');
+                this.cursorDot.classList.remove('cursor-hover');
+            }
         });
     }
 }
 
+// --- Initialization Helpers ---
 export function initLenis() {
-    // Ultra-Snappy Mode: Disable Lenis entirely for native scrolling
+    // Ultra-Snappy: Native scroll, no library overhead
     document.documentElement.style.scrollBehavior = 'smooth';
-    console.log('Native Scroll Enabled for Max Performance');
     return null;
 }
 
 export function initAnimations() {
-    // Check if gsap is available
-    if (typeof gsap === 'undefined') {
-        console.warn('GSAP not loaded, skipping animations');
-        return;
-    }
-
-    // Register ScrollTrigger if available (for sticky headers etc if needed)
-    if (typeof ScrollTrigger !== 'undefined') {
-        gsap.registerPlugin(ScrollTrigger);
-    }
-
-    // Subtle entrance for shell
-    gsap.from('#appShell', {
-        y: 10,
-        opacity: 0,
-        duration: 0.6,
-        ease: 'power2.out'
-    });
-
     // Initialize Lucide Icons
     if (typeof lucide !== 'undefined') {
         lucide.createIcons();
     }
 }
+
+// --- Auto-Init (runs when imported as module) ---
+document.addEventListener('DOMContentLoaded', () => {
+    new NavigationSystem();
+    initAnimations();
+    // Cursor is optional — uncomment if desired
+    // new Cursor();
+});

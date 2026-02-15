@@ -527,14 +527,11 @@
 
     <div id="appShell" class="relative z-10 flex min-h-screen">
 
-        <!-- Sidebar Overlay (Mobile) -->
-        <div id="sidebarOverlay"
-            class="fixed inset-0 bg-slate-900/10 backdrop-blur-sm z-40 hidden opacity-0 transition-opacity duration-300 lg:hidden">
-        </div>
+        <!-- Backdrop Overlay -->
+        <div id="navBackdrop"></div>
 
         <!-- Sidebar -->
-        <aside id="appSidebar"
-            class="fixed lg:sticky top-0 left-0 h-screen w-80 bg-white/70 backdrop-blur-2xl border-r border-white/50 z-50 transform -translate-x-full lg:translate-x-0 transition-transform duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] flex flex-col shadow-2xl lg:shadow-none">
+        <aside id="appSidebar" class="bg-white/70 backdrop-blur-2xl border-r border-white/50 flex flex-col">
 
             <!-- Logo Area -->
             <div class="h-28 flex items-center px-10 border-b border-indigo-50/30">
@@ -608,9 +605,8 @@
                 class="sticky top-0 z-30 px-10 py-6 bg-white/40 backdrop-blur-xl border-b border-white/50">
                 <div class="flex items-center justify-between">
                     <div class="flex items-center gap-6">
-                        <button id="sidebarToggle"
-                            class="lg:hidden p-3 rounded-2xl bg-white text-slate-600 shadow-sm border border-slate-100">
-                            <i data-lucide="menu" class="w-6 h-6"></i>
+                        <button id="sidebarToggle" class="hamburger" aria-label="Menu">
+                            <span></span><span></span><span></span>
                         </button>
                         <h2 class="text-2xl font-black text-slate-900 tracking-tight hidden md:block">Operators
                             Management
@@ -1003,11 +999,9 @@
         </div>
     </div>
 
+    <script type="module" src="js/ui-core.js"></script>
     <script type="module" src="js/operators.js"></script>
     <script>
-        // Initialize Lucide Icons
-        if (typeof lucide !== 'undefined') lucide.createIcons();
-
         // Modal Logic
         document.querySelectorAll('.close-modal, [data-modal]').forEach(btn => {
             btn.addEventListener('click', function () {

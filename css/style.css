@@ -2320,7 +2320,6 @@ select option {
 
 .score-slider input[type="range"]::-webkit-slider-thumb {
     -webkit-appearance: none;
-    appearance: none;
     width: 20px;
     height: 20px;
     border-radius: 50%;
@@ -4561,35 +4560,188 @@ optgroup option {
     display: inline-block;
 }
 
-/* Enhanced Mobile Sidebar */
-@media (max-width: 1023px) {
-    #appSidebar {
-        box-shadow: 20px 0 60px rgba(0, 0, 0, 0.1);
-        z-index: 50;
-    }
+/* ============================================================
+   RETRACTABLE SIDEBAR NAVIGATION SYSTEM
+   GPU-accelerated CSS transitions, no JS animation dependency
+   ============================================================ */
 
-    #sidebarOverlay {
-        z-index: 40;
-    }
+/* --- Hamburger Button (3-bar → X) --- */
+.hamburger {
+    position: relative;
+    width: 44px;
+    height: 44px;
+    background: white;
+    border: 1px solid #e2e8f0;
+    border-radius: 1rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    gap: 5px;
+    padding: 0;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    transition: box-shadow 0.3s ease, border-color 0.3s ease;
+    z-index: 60;
+}
 
-    /* Smooth transitions */
-    #appSidebar {
-        transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
-    }
+.hamburger:hover {
+    border-color: #c7d2fe;
+    box-shadow: 0 4px 12px rgba(99, 102, 241, 0.1);
+}
 
-    #sidebarOverlay {
-        transition: opacity 0.3s ease, visibility 0.3s ease;
+.hamburger span {
+    display: block;
+    width: 20px;
+    height: 2px;
+    background: #475569;
+    border-radius: 2px;
+    transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1),
+        opacity 0.2s ease,
+        background 0.3s ease;
+    transform-origin: center;
+}
+
+/* Hamburger → X animation */
+.hamburger.open span:nth-child(1) {
+    transform: translateY(7px) rotate(45deg);
+    background: #4f46e5;
+}
+
+.hamburger.open span:nth-child(2) {
+    opacity: 0;
+    transform: scaleX(0);
+}
+
+.hamburger.open span:nth-child(3) {
+    transform: translateY(-7px) rotate(-45deg);
+    background: #4f46e5;
+}
+
+/* --- Sidebar (Off-Canvas) --- */
+#appSidebar {
+    /* Layout Enforcements (overriding Tailwind) */
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 100vh;
+    width: 20rem;
+    /* w-80 */
+    z-index: 50;
+
+    /* Animation */
+    transform: translateX(-100%) !important;
+    /* Force hidden by default on mobile */
+    will-change: transform;
+    transition: transform 0.45s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+#appSidebar.open {
+    transform: translateX(0) !important;
+    /* Force visible when open */
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+    /* shadow-2xl */
+}
+
+/* Desktop: Sidebar is overlay too (fixed) to prevent content push */
+/* No sticky rule needed, 'fixed' from mobile rule applies everywhere */
+
+/* --- Backdrop Overlay --- */
+#navBackdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.25);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    z-index: 40;
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transition: opacity 0.35s ease, visibility 0.35s ease;
+}
+
+#navBackdrop.open {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+}
+
+/* Allow backdrop on desktop now that sidebar is overlay */
+
+/* --- Active Nav Link --- */
+.nav-link.active {
+    background: linear-gradient(135deg, rgba(79, 70, 229, 0.08) 0%, rgba(139, 92, 246, 0.08) 100%) !important;
+    color: #4338ca !important;
+    font-weight: 700 !important;
+    border-right: 4px solid #4f46e5;
+    position: relative;
+}
+
+.nav-link.active::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 3px;
+    height: 60%;
+    background: linear-gradient(180deg, #4f46e5, #7c3aed);
+    border-radius: 0 4px 4px 0;
+}
+
+/* --- Custom Cursor --- */
+.cursor-dot {
+    position: fixed;
+    width: 8px;
+    height: 8px;
+    background: #4f46e5;
+    border-radius: 50%;
+    pointer-events: none;
+    z-index: 9999;
+    mix-blend-mode: difference;
+    top: 0;
+    left: 0;
+    will-change: transform;
+}
+
+.cursor-outline {
+    position: fixed;
+    width: 32px;
+    height: 32px;
+    border: 1.5px solid rgba(148, 163, 184, 0.5);
+    border-radius: 50%;
+    pointer-events: none;
+    z-index: 9998;
+    top: 0;
+    left: 0;
+    will-change: transform;
+    transition: width 0.3s ease, height 0.3s ease, border-color 0.3s ease;
+}
+
+.cursor-outline.cursor-hover {
+    width: 48px;
+    height: 48px;
+    border-color: #4f46e5;
+}
+
+.cursor-dot.cursor-hover {
+    opacity: 0.5;
+}
+
+/* Hide cursor on touch devices */
+@media (hover: none) and (pointer: coarse) {
+
+    .cursor-dot,
+    .cursor-outline {
+        display: none !important;
     }
 }
 
-/* Prevent body scroll when sidebar is open */
-body.sidebar-open {
-    overflow: hidden;
-}
+/* Hide cursor elements on mobile */
+@media (max-width: 768px) {
 
-/* Desktop: always show sidebar */
-@media (min-width: 1024px) {
-    #sidebarOverlay {
+    .cursor-dot,
+    .cursor-outline {
         display: none !important;
     }
 }
