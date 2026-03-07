@@ -31,6 +31,9 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
         rel="stylesheet">
 
+    <!-- SheetJS (Excel) -->
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
+
     <script>
         tailwind.config = {
             theme: {
@@ -652,6 +655,10 @@
                             <button id="addPerformanceBtn" class="btn btn-primary flex items-center gap-2">
                                 <i data-lucide="plus-circle" class="w-4 h-4"></i>
                                 <span>Add Record</span>
+                            </button>
+                            <button id="exportPerformanceBtn" class="btn btn-info flex items-center gap-2">
+                                <i data-lucide="download" class="w-4 h-4"></i>
+                                <span>Export Excel</span>
                             </button>
                             <a href="index.html" id="analyzeBtn"
                                 class="btn btn-info flex items-center gap-2 no-underline">

@@ -1,5 +1,5 @@
 import { subscribeToOperators, subscribeToPerformance } from './data-service.js';
-import { showToast, updateRealTimeClock } from './common.js';
+import { showToast, updateRealTimeClock, supervisorMapping, getSupervisorForLine } from './common.js';
 import { NavigationSystem, Cursor, initLenis, initAnimations } from './ui-core.js';
 
 let operators = [];
@@ -192,7 +192,8 @@ function updateOperatorStats() {
         lines.forEach(line => {
             const opt = document.createElement('option');
             opt.value = line;
-            opt.textContent = line;
+            const sup = getSupervisorForLine(line);
+            opt.textContent = sup !== 'Unknown' ? `${line} (${sup})` : line;
             lineFilter.appendChild(opt);
         });
     }
@@ -233,7 +234,8 @@ function updatePerformanceStats(data) {
         lines.forEach(line => {
             const opt = document.createElement('option');
             opt.value = line;
-            opt.textContent = line;
+            const sup = getSupervisorForLine(line);
+            opt.textContent = sup !== 'Unknown' ? `${line} (${sup})` : line;
             lineFilter.appendChild(opt);
 
             // Also populate bottleneck filter here?
@@ -527,10 +529,40 @@ function updateGarmentSMVSelectors() {
     lines.forEach(l => {
         const opt = document.createElement('option');
         opt.value = l;
-        opt.textContent = l;
+        const sup = getSupervisorForLine(l);
+        opt.textContent = sup !== 'Unknown' ? `${l} (${sup})` : l;
         select.appendChild(opt);
     });
     if (lines.includes(currentVal)) select.value = currentVal;
+}
+
+function updateStyleOptions(lineNo, selectElement) {
+    if (!selectElement) return;
+    selectElement.innerHTML = '<option value="">All Styles</option>';
+
+    if (!lineNo) {
+        selectElement.disabled = true;
+        selectElement.classList.add('opacity-40', 'cursor-not-allowed');
+        return;
+    }
+
+    const styles = [...new Set(performanceData.filter(d => d.lineNo === lineNo).map(d => d.styleNo).filter(Boolean))].sort();
+
+    if (styles.length === 0) {
+        selectElement.disabled = true;
+        selectElement.classList.add('opacity-40', 'cursor-not-allowed');
+        return;
+    }
+
+    styles.forEach(style => {
+        const opt = document.createElement('option');
+        opt.value = style;
+        opt.textContent = style;
+        selectElement.appendChild(opt);
+    });
+
+    selectElement.disabled = false;
+    selectElement.classList.remove('opacity-40', 'cursor-not-allowed');
 }
 
 function updateCombinedSMV() {
@@ -751,7 +783,8 @@ function updateTimeStudiesStats() {
         lines.forEach(line => {
             const opt = document.createElement('option');
             opt.value = line;
-            opt.textContent = line;
+            const sup = getSupervisorForLine(line);
+            opt.textContent = sup !== 'Unknown' ? `${line} (${sup})` : line;
             lineFilter.appendChild(opt);
         });
     }

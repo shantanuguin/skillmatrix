@@ -90,6 +90,20 @@ function setupEventListeners() {
     getElement('addOtherMachineBtn')?.addEventListener('click', () => {
         addOtherMachineRow();
     });
+
+    // Export Button
+    getElement('exportOperatorsBtn')?.addEventListener('click', exportOperatorsToExcel);
+
+    // Import Button
+    getElement('importOperatorsBtn')?.addEventListener('click', () => {
+        getElement('importFileInput')?.click();
+    });
+
+    getElement('importFileInput')?.addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (file) handleImportFile(file);
+        e.target.value = ''; // Reset for re-use
+    });
 }
 
 function filterOperators() {
@@ -332,7 +346,7 @@ function openEditModalForOperator(operatorId) {
     if (!op) return;
 
     getElement('editOperatorId').textContent = op.operatorId;
-    getElement('editOperatorName').textContent = op.name;
+    getElement('editOperatorNameInput').value = op.name;
 
     populateSewLineSelect('editSewLine');
     getElement('editSewLine').value = op.sewLine || '';
@@ -381,6 +395,7 @@ async function handleEditOperator(e) {
     if (!op) return;
 
     const updates = {
+        name: getElement('editOperatorNameInput').value.trim() || op.name,
         sewLine: getElement('editSewLine').value,
         skillLevel: getElement('editSkillLevel').value,
         skillScore: parseFloat(getElement('editSkillScore').value) || 0
@@ -847,4 +862,197 @@ function startTimeStudyForOperator(operatorId) {
 
     // Navigate to time-study page
     window.location.href = `time-study.html?operatorId=${encodeURIComponent(operatorId)}`;
+}
+
+// ==================== EXCEL EXPORT FUNCTION ====================
+
+function exportOperatorsToExcel() {
+    if (operators.length === 0) {
+        showToast('No operators to export', 'error');
+        return;
+    }
+
+    const data = operators.map((op, index) => ({
+        'S.No': index + 1,
+        'Operator ID': op.operatorId,
+        'Operator Name': op.name,
+        'Sew Line': op.sewLine || '-',
+        'Supervisor': getSupervisorForLine(op.sewLine),
+        'Multi-Skill Grade': calculateMultiSkillGrade(op.operatorId),
+        'Skill Score': calculateSkillScore(op.operatorId).toFixed(2)
+    }));
+
+    const ws = XLSX.utils.json_to_sheet(data);
+
+    // Column widths
+    ws['!cols'] = [
+        { wch: 6 },   // S.No
+        { wch: 14 },  // Operator ID
+        { wch: 22 },  // Name
+        { wch: 10 },  // Sew Line
+        { wch: 16 },  // Supervisor
+        { wch: 16 },  // Grade
+        { wch: 12 }   // Score
+    ];
+
+    // Freeze header row
+    ws['!freeze'] = { xSplit: 0, ySplit: 1 };
+
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Operators Master List');
+
+    const dateStr = new Date().toISOString().slice(0, 10);
+    XLSX.writeFile(wb, `Operators_Master_List_${dateStr}.xlsx`);
+    showToast(`Exported ${data.length} operators to Excel`);
+}
+
+// ==================== EXCEL IMPORT FUNCTION ====================
+
+let pendingImportData = []; // Holds rows ready to import after analysis
+
+async function handleImportFile(file) {
+    try {
+        const arrayBuffer = await file.arrayBuffer();
+        const wb = XLSX.read(arrayBuffer);
+        const ws = wb.Sheets[wb.SheetNames[0]];
+        const jsonData = XLSX.utils.sheet_to_json(ws);
+
+        if (jsonData.length === 0) {
+            showToast('The file is empty or has no data rows', 'error');
+            return;
+        }
+
+        // Analyze the import
+        const analysis = {
+            totalRows: jsonData.length,
+            duplicates: [],
+            newOperators: [],
+            warnings: []
+        };
+
+        jsonData.forEach((row, idx) => {
+            const opId = (row['Operator ID'] || row['operatorId'] || row['ID'] || '').toString().trim();
+            const opName = (row['Operator Name'] || row['name'] || row['Name'] || '').toString().trim();
+            const sewLine = (row['Sew Line'] || row['sewLine'] || row['Line'] || '').toString().trim();
+            const skillLevel = (row['Multi-Skill Grade'] || row['Skill Level'] || row['skillLevel'] || '').toString().trim();
+
+            if (!opId) {
+                analysis.warnings.push(`Row ${idx + 2}: Missing Operator ID — skipped`);
+                return;
+            }
+            if (!opName) {
+                analysis.warnings.push(`Row ${idx + 2}: Missing Name for ID "${opId}"`);
+            }
+
+            if (operators.some(o => o.operatorId === opId)) {
+                analysis.duplicates.push({ id: opId, name: opName, row: idx + 2 });
+            } else {
+                analysis.newOperators.push({
+                    operatorId: opId,
+                    name: opName || 'Unnamed',
+                    sewLine: sewLine,
+                    skillLevel: skillLevel || 'Group D',
+                    skillScore: 0
+                });
+            }
+        });
+
+        pendingImportData = analysis.newOperators;
+        showImportAnalysis(analysis, file.name);
+    } catch (err) {
+        console.error('Import error:', err);
+        showToast('Failed to read file: ' + err.message, 'error');
+    }
+}
+
+function showImportAnalysis(analysis, fileName) {
+    const content = getElement('importAnalysisContent');
+    const actions = getElement('importAnalysisActions');
+    if (!content) return;
+
+    const hasNew = analysis.newOperators.length > 0;
+
+    content.innerHTML = `
+        <div style="margin-bottom: 20px;">
+            <p style="color: #94a3b8; font-size: 0.85rem; margin-bottom: 15px;"><i class="fas fa-file-excel mr-2"></i>File: <strong style="color:#e2e8f0;">${fileName}</strong></p>
+
+            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 20px;">
+                <div style="background: rgba(99, 102, 241, 0.1); border-radius: 12px; padding: 16px; text-align: center; border: 1px solid rgba(99, 102, 241, 0.2);">
+                    <div style="font-size: 1.8rem; font-weight: 800; color: #818cf8;">${analysis.totalRows}</div>
+                    <div style="font-size: 0.75rem; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.05em;">Total Rows</div>
+                </div>
+                <div style="background: rgba(16, 185, 129, 0.1); border-radius: 12px; padding: 16px; text-align: center; border: 1px solid rgba(16, 185, 129, 0.2);">
+                    <div style="font-size: 1.8rem; font-weight: 800; color: #34d399;">${analysis.newOperators.length}</div>
+                    <div style="font-size: 0.75rem; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.05em;">New to Import</div>
+                </div>
+                <div style="background: rgba(245, 158, 11, 0.1); border-radius: 12px; padding: 16px; text-align: center; border: 1px solid rgba(245, 158, 11, 0.2);">
+                    <div style="font-size: 1.8rem; font-weight: 800; color: #fbbf24;">${analysis.duplicates.length}</div>
+                    <div style="font-size: 0.75rem; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.05em;">Duplicates Skipped</div>
+                </div>
+            </div>
+        </div>
+
+        ${analysis.duplicates.length > 0 ? `
+            <div style="margin-bottom: 16px;">
+                <h4 style="color: #fbbf24; font-size: 0.85rem; margin-bottom: 8px;"><i class="fas fa-copy mr-2"></i>Duplicates (Existing IDs — will be skipped)</h4>
+                <div style="max-height: 120px; overflow-y: auto; background: rgba(245, 158, 11, 0.05); border-radius: 8px; padding: 10px; border: 1px solid rgba(245, 158, 11, 0.15);">
+                    ${analysis.duplicates.map(d => `<div style="font-size:0.8rem; color:#94a3b8; padding:3px 0;">• Row ${d.row}: <strong style="color:#e2e8f0;">${d.id}</strong> — ${d.name}</div>`).join('')}
+                </div>
+            </div>
+        ` : ''}
+
+        ${analysis.newOperators.length > 0 ? `
+            <div style="margin-bottom: 16px;">
+                <h4 style="color: #34d399; font-size: 0.85rem; margin-bottom: 8px;"><i class="fas fa-user-plus mr-2"></i>New Operators to Import</h4>
+                <div style="max-height: 150px; overflow-y: auto; background: rgba(16, 185, 129, 0.05); border-radius: 8px; padding: 10px; border: 1px solid rgba(16, 185, 129, 0.15);">
+                    ${analysis.newOperators.map(n => `<div style="font-size:0.8rem; color:#94a3b8; padding:3px 0;">• <strong style="color:#e2e8f0;">${n.operatorId}</strong> — ${n.name} (${n.sewLine || 'No line'})</div>`).join('')}
+                </div>
+            </div>
+        ` : ''}
+
+        ${analysis.warnings.length > 0 ? `
+            <div>
+                <h4 style="color: #ef4444; font-size: 0.85rem; margin-bottom: 8px;"><i class="fas fa-exclamation-triangle mr-2"></i>Warnings</h4>
+                <div style="max-height: 100px; overflow-y: auto; background: rgba(239, 68, 68, 0.05); border-radius: 8px; padding: 10px; border: 1px solid rgba(239, 68, 68, 0.15);">
+                    ${analysis.warnings.map(w => `<div style="font-size:0.8rem; color:#fca5a5; padding:3px 0;">${w}</div>`).join('')}
+                </div>
+            </div>
+        ` : ''}
+    `;
+
+    // Show/hide confirm button
+    if (actions) {
+        actions.style.display = hasNew ? 'flex' : 'none';
+    }
+
+    // Wire up confirm button
+    const confirmBtn = getElement('confirmImportBtn');
+    if (confirmBtn) {
+        confirmBtn.onclick = async () => {
+            confirmBtn.disabled = true;
+            confirmBtn.textContent = 'Importing...';
+
+            let successCount = 0;
+            let failCount = 0;
+
+            for (const opData of pendingImportData) {
+                try {
+                    const success = await addOperator(opData);
+                    if (success) successCount++;
+                    else failCount++;
+                } catch (err) {
+                    console.error('Import error for', opData.operatorId, err);
+                    failCount++;
+                }
+            }
+
+            pendingImportData = [];
+            confirmBtn.disabled = false;
+            confirmBtn.textContent = 'Confirm Import';
+            closeModal('importAnalysisModal');
+            showToast(`Import complete: ${successCount} added, ${failCount} failed`);
+        };
+    }
+
+    openModal('importAnalysisModal');
 }

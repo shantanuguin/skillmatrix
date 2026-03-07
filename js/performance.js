@@ -168,6 +168,9 @@ function setupEventListeners() {
 
     // Auto-calculate Working SMV if Standard SMV changed (optional, naive implementation)
     // Actually, normally Working SMV comes from cycle times. If user inputs manually, they just input it.
+
+    // Export Button
+    getElement('exportPerformanceBtn')?.addEventListener('click', exportPerformanceToExcel);
 }
 
 function filterPerformanceData() {
@@ -426,7 +429,7 @@ function openEditModalForRecord(id) {
     getElement('editRecordStdSMV').value = record.standardSMV;
     getElement('editRecordWorkingSMV').value = record.workingSMV;
     getElement('editRecordOperationGrade').value = record.operationGrade || '';
-    getElement('editRecordCtqDropdown').value = record.criticalToQuality || '';
+    getElement('editRecordCtqDropdown').value = record.criticalToQuality || record.ctq || record.ctqStatus || '';
     getElement('editRecordBottleneck').checked = record.bottleneck || false;
 
     if (record.cycleTimes) {
@@ -485,6 +488,7 @@ async function handleAddPerformance(e) {
         // Criticality Indicators
         operationGrade: getElement('perfOperationGrade')?.value || '',
         criticalToQuality: getElement('perfCtqDropdown')?.value || 'non-critical',
+        ctq: getElement('perfCtqDropdown')?.value || 'non-critical',
         bottleneck: getElement('perfBottleneckCheckbox')?.checked || false
     };
 
@@ -532,6 +536,7 @@ async function handleEditPerformance(e) {
         efficiency: efficiency,
         operationGrade: getElement('editRecordOperationGrade').value,
         criticalToQuality: getElement('editRecordCtqDropdown').value,
+        ctq: getElement('editRecordCtqDropdown').value,
         bottleneck: getElement('editRecordBottleneck').checked,
         cycleTimes: cycleTimes,
         avgCycleTime: cycleTimes.length > 0 ? cycleTimes.reduce((a, b) => a + b, 0) / cycleTimes.length : 0
@@ -549,4 +554,81 @@ async function handleDeleteRecord(id) {
         const success = await deletePerformanceRecord(id);
         if (success) showToast('Record deleted');
     }
+}
+
+// ==================== EXCEL EXPORT FUNCTION ====================
+
+function exportPerformanceToExcel() {
+    if (performanceData.length === 0) {
+        showToast('No performance data to export', 'error');
+        return;
+    }
+
+    const data = performanceData.map((r, index) => {
+        const date = r.timestamp ? new Date(r.timestamp).toLocaleString() : '-';
+        const otherMachinesDisplay = r.otherMachines ? r.otherMachines.replace(/,/g, ', ') : '-';
+
+        let otherMachineEffDisplay = '-';
+        if (r.otherMachines && r.otherMachineEfficiencies) {
+            const otherMachines = r.otherMachines.split(', ').map(m => m.trim());
+            otherMachineEffDisplay = otherMachines.map(machine => {
+                const efficiency = r.otherMachineEfficiencies[machine] || 0;
+                return `${efficiency.toFixed(1)}%`;
+            }).join(', ');
+        }
+
+        const ctqVal = (r.criticalToQuality === 'critical' || r.ctq === 'critical' || r.ctqStatus === 'critical') ? 'Critical' : 'No';
+
+        return {
+            'S.No': index + 1,
+            'Date & Time': date,
+            'Line No': r.lineNo || '-',
+            'Style No': r.styleNo || '-',
+            'Product': r.productDesc || '-',
+            'Operator ID': r.operatorId || '-',
+            'Operator Name': r.operatorName || '-',
+            'Operation': r.operation || '-',
+            'Machine': r.machineName || '-',
+            'Other Machines': otherMachinesDisplay,
+            'Standard SMV': r.standardSMV?.toFixed(2) || '0.00',
+            'Working SMV': r.workingSMV?.toFixed(2) || '0.00',
+            'Efficiency (%)': r.efficiency?.toFixed(1) || '0.0',
+            'Other Machine Eff': otherMachineEffDisplay,
+            'Operation Grade': r.operationGrade || '-',
+            'CTQ': ctqVal,
+            'Bottleneck': r.bottleneck ? 'Yes' : 'No'
+        };
+    });
+
+    const ws = XLSX.utils.json_to_sheet(data);
+
+    // Column widths
+    ws['!cols'] = [
+        { wch: 6 },   // S.No
+        { wch: 20 },  // Date & Time
+        { wch: 10 },  // Line No
+        { wch: 14 },  // Style No
+        { wch: 18 },  // Product
+        { wch: 14 },  // Operator ID
+        { wch: 20 },  // Name
+        { wch: 18 },  // Operation
+        { wch: 14 },  // Machine
+        { wch: 18 },  // Other Machines
+        { wch: 14 },  // Std SMV
+        { wch: 14 },  // Working SMV
+        { wch: 14 },  // Efficiency
+        { wch: 18 },  // Other Machine Eff
+        { wch: 14 },  // Grade
+        { wch: 10 },  // CTQ
+        { wch: 12 }   // Bottleneck
+    ];
+
+    ws['!freeze'] = { xSplit: 0, ySplit: 1 };
+
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Performance Records');
+
+    const dateStr = new Date().toISOString().slice(0, 10);
+    XLSX.writeFile(wb, `Performance_Records_${dateStr}.xlsx`);
+    showToast(`Exported ${data.length} records to Excel`);
 }

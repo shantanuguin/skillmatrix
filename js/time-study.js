@@ -164,7 +164,21 @@ function setupEventListeners() {
             }
 
             if (value === 'manual') {
-                setupManualCycleInputs(3);
+                // Pre-fill with existing stopwatch laps if any were recorded
+                if (lapTimes.length > 0) {
+                    const numInputs = Math.max(lapTimes.length + 2, 3);
+                    setupManualCycleInputs(numInputs);
+                    // Fill in existing lap data
+                    const inputs = document.querySelectorAll('#manualCycleGrid .manual-cycle-time');
+                    lapTimes.forEach((lap, idx) => {
+                        if (inputs[idx]) {
+                            inputs[idx].value = lap.durationSec.toFixed(3);
+                        }
+                    });
+                    showToast(`${lapTimes.length} recorded lap(s) pre-filled. Enter remaining cycles manually.`, 'info');
+                } else {
+                    setupManualCycleInputs(3);
+                }
             } else if (lapTimes.length > 0) {
                 if (confirm('Changing cycle count will reset current measurements. Continue?')) {
                     resetStopwatch();
@@ -414,6 +428,7 @@ async function handleSaveData() {
         efficiency: efficiency,
         operationGrade: getElement('operationGrade').value,
         criticalToQuality: getElement('ctqDropdown').value,
+        ctq: getElement('ctqDropdown').value,
         bottleneck: getElement('bottleneckCheckbox').checked,
         otherMachines: otherMachines.join(', '),
         cycleTimes: cycles,
