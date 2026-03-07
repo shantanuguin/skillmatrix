@@ -48,10 +48,25 @@ export const supervisorMapping = {
     'F-2-N/S': 'DHANANJAY'
 };
 
+// Helper function to normalize line numbers (e.g., S-9 -> S-09)
+export function normalizeLineNo(lineNo) {
+    if (!lineNo) return '';
+    let normalized = lineNo.toUpperCase().trim();
+    // Match patterns like S-1 or F-2 and pad with a leading zero
+    // Group 1: Prefix (e.g., "S-")
+    // Group 2: Single digit
+    // Group 3: Optional suffix (e.g., "A")
+    const regex = /^([A-Z]+-)(\d)(?!\d)(.*)$/;
+    if (regex.test(normalized)) {
+        normalized = normalized.replace(regex, '$10$2$3');
+    }
+    return normalized;
+}
+
 // Helper function to get supervisor for a line
 export function getSupervisorForLine(lineNo) {
     if (!lineNo) return 'Unknown';
-    const normalized = lineNo.toUpperCase().trim();
+    const normalized = normalizeLineNo(lineNo);
     return supervisorMapping[normalized] || 'Unknown';
 }
 

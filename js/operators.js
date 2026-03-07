@@ -1,5 +1,5 @@
 import { subscribeToOperators, subscribeToPerformance, addOperator, updateOperator, deleteOperator, updatePerformanceRecord } from './data-service.js';
-import { supervisorMapping, getSupervisorForLine, showToast, updateRealTimeClock, setupMobileMenu, setupModalListeners, openModal, closeModal, getElement, populateMachineOptions, machineFamilies } from './common.js?v=1.0.1';
+import { supervisorMapping, getSupervisorForLine, normalizeLineNo, showToast, updateRealTimeClock, setupMobileMenu, setupModalListeners, openModal, closeModal, getElement, populateMachineOptions, machineFamilies } from './common.js?v=1.0.1';
 
 let operators = [];
 let performanceData = [];
@@ -933,7 +933,8 @@ async function handleImportFile(file) {
         jsonData.forEach((row, idx) => {
             const opId = (row['Operator ID'] || row['operatorId'] || row['ID'] || '').toString().trim();
             const opName = (row['Operator Name'] || row['name'] || row['Name'] || '').toString().trim();
-            const sewLine = (row['Line Number'] || row['Sew Line'] || row['sewLine'] || row['Line'] || '').toString().trim();
+            const rawLine = (row['Line Number'] || row['Sew Line'] || row['sewLine'] || row['Line'] || '').toString().trim();
+            const sewLine = normalizeLineNo(rawLine);
             const skillLevel = (row['Multi-Skill Grade'] || row['Skill Level'] || row['skillLevel'] || 'Group D').toString().trim();
 
             if (!opId) {
