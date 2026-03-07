@@ -373,7 +373,6 @@ async function handleAddOperator(e) {
         operatorId: newId,
         name: getElement('newOperatorName').value.trim(),
         sewLine: getElement('newSewLine').value,
-        supervisor: getSupervisorForLine(getElement('newSewLine').value),
         skillLevel: getElement('newSkillLevel').value,
         skillScore: 0
     };
@@ -398,7 +397,6 @@ async function handleEditOperator(e) {
     const updates = {
         name: getElement('editOperatorNameInput').value.trim() || op.name,
         sewLine: getElement('editSewLine').value,
-        supervisor: getSupervisorForLine(getElement('editSewLine').value),
         skillLevel: getElement('editSkillLevel').value,
         skillScore: parseFloat(getElement('editSkillScore').value) || 0
     };
@@ -951,11 +949,12 @@ async function handleImportFile(file) {
                 // If operator ID exists, record as duplicate
                 analysis.duplicates.push({ id: opId, name: opName, line: sewLine, row: idx + 2 });
             } else {
+                const mappedSupervisor = getSupervisorForLine(sewLine);
                 analysis.newOperators.push({
                     operatorId: opId,
                     name: opName || 'Unnamed',
                     sewLine: sewLine,
-                    supervisor: getSupervisorForLine(sewLine),
+                    supervisor: mappedSupervisor,
                     skillLevel: skillLevel,
                     skillScore: 0
                 });
@@ -1010,7 +1009,7 @@ function showImportAnalysis(analysis, fileName) {
             <div style="margin-bottom: 16px;">
                 <h4 style="color: #34d399; font-size: 0.85rem; margin-bottom: 8px;"><i class="fas fa-user-plus mr-2"></i>New Operators to Import</h4>
                 <div style="max-height: 150px; overflow-y: auto; background: rgba(16, 185, 129, 0.05); border-radius: 8px; padding: 10px; border: 1px solid rgba(16, 185, 129, 0.15);">
-                    ${analysis.newOperators.map(n => `<div style="font-size:0.8rem; color:#94a3b8; padding:3px 0;">• <strong style="color:#e2e8f0; margin-right: 8px;">ID: ${n.operatorId}</strong> <span style="margin-right: 8px;">Name: ${n.name}</span> <span style="margin-right: 8px;">Line: ${n.sewLine || 'N/A'}</span> <span>Sup: ${n.supervisor || 'Unknown'}</span></div>`).join('')}
+                    ${analysis.newOperators.map(n => `<div style="font-size:0.8rem; color:#94a3b8; padding:3px 0;">• <strong style="color:#e2e8f0; margin-right: 8px;">ID: ${n.operatorId}</strong> <span style="margin-right: 8px;">Name: ${n.name}</span> <span>Line: ${n.sewLine || 'N/A'}</span></div>`).join('')}
                 </div>
             </div>
         ` : ''}
