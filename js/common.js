@@ -48,18 +48,37 @@ export const supervisorMapping = {
     'F-2-N/S': 'DHANANJAY'
 };
 
-// Helper function to normalize line numbers (e.g., S-9 -> S-09)
+// Helper function to normalize line numbers (e.g., S-9 -> S-09, 9 -> S-09)
 export function normalizeLineNo(lineNo) {
     if (!lineNo) return '';
-    let normalized = lineNo.toUpperCase().trim();
-    // Match patterns like S-1 or F-2 and pad with a leading zero
-    // Group 1: Prefix (e.g., "S-")
-    // Group 2: Single digit
-    // Group 3: Optional suffix (e.g., "A")
-    const regex = /^([A-Z]+-)(\d)(?!\d)(.*)$/;
-    if (regex.test(normalized)) {
-        normalized = normalized.replace(regex, '$10$2$3');
+    let normalized = String(lineNo).toUpperCase().trim();
+
+    // Remove variations of "LINE " prefix
+    normalized = normalized.replace(/^(LINE|SEW\s*LINE)\s*-?\s*/i, '');
+
+    // If it's a pure number like "9", "09", "9A"
+    if (/^\d+[A-Z]*$/.test(normalized)) {
+        // Assume 'S' prefix by default for pure numbers
+        normalized = 'S-' + normalized;
     }
+
+    // Remove internal spaces (e.g. "S 9" -> "S9")
+    normalized = normalized.replace(/\s+/g, '');
+
+    // Pad single digits (e.g. S-9 -> S-09, S9 -> S-09, F-2 -> F-02)
+    const singleDigitRegex = /^([A-Z]+)-?(\d)(?!\d)(.*)$/;
+    const match = normalized.match(singleDigitRegex);
+    if (match) {
+        normalized = `${match[1]}-0${match[2]}${match[3]}`;
+    } else {
+        // Ensure proper dash format for multidigit too (e.g. S10 -> S-10)
+        const multiDigitRegex = /^([A-Z]+)-?(\d{2,})(.*)$/;
+        const matchMulti = normalized.match(multiDigitRegex);
+        if (matchMulti) {
+            normalized = `${matchMulti[1]}-${matchMulti[2]}${matchMulti[3]}`;
+        }
+    }
+
     return normalized;
 }
 
