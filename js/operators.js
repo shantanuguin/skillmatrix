@@ -933,8 +933,8 @@ async function handleImportFile(file) {
         jsonData.forEach((row, idx) => {
             const opId = (row['Operator ID'] || row['operatorId'] || row['ID'] || '').toString().trim();
             const opName = (row['Operator Name'] || row['name'] || row['Name'] || '').toString().trim();
-            const sewLine = (row['Sew Line'] || row['sewLine'] || row['Line'] || '').toString().trim();
-            const skillLevel = (row['Multi-Skill Grade'] || row['Skill Level'] || row['skillLevel'] || '').toString().trim();
+            const sewLine = (row['Line Number'] || row['Sew Line'] || row['sewLine'] || row['Line'] || '').toString().trim();
+            const skillLevel = (row['Multi-Skill Grade'] || row['Skill Level'] || row['skillLevel'] || 'Group D').toString().trim();
 
             if (!opId) {
                 analysis.warnings.push(`Row ${idx + 2}: Missing Operator ID — skipped`);
@@ -944,14 +944,16 @@ async function handleImportFile(file) {
                 analysis.warnings.push(`Row ${idx + 2}: Missing Name for ID "${opId}"`);
             }
 
+            // Match against Operator ID, Name, and Sew Line
             if (operators.some(o => o.operatorId === opId)) {
-                analysis.duplicates.push({ id: opId, name: opName, row: idx + 2 });
+                // If operator ID exists, record as duplicate
+                analysis.duplicates.push({ id: opId, name: opName, line: sewLine, row: idx + 2 });
             } else {
                 analysis.newOperators.push({
                     operatorId: opId,
                     name: opName || 'Unnamed',
                     sewLine: sewLine,
-                    skillLevel: skillLevel || 'Group D',
+                    skillLevel: skillLevel,
                     skillScore: 0
                 });
             }
@@ -996,7 +998,7 @@ function showImportAnalysis(analysis, fileName) {
             <div style="margin-bottom: 16px;">
                 <h4 style="color: #fbbf24; font-size: 0.85rem; margin-bottom: 8px;"><i class="fas fa-copy mr-2"></i>Duplicates (Existing IDs — will be skipped)</h4>
                 <div style="max-height: 120px; overflow-y: auto; background: rgba(245, 158, 11, 0.05); border-radius: 8px; padding: 10px; border: 1px solid rgba(245, 158, 11, 0.15);">
-                    ${analysis.duplicates.map(d => `<div style="font-size:0.8rem; color:#94a3b8; padding:3px 0;">• Row ${d.row}: <strong style="color:#e2e8f0;">${d.id}</strong> — ${d.name}</div>`).join('')}
+                    ${analysis.duplicates.map(d => `<div style="font-size:0.8rem; color:#94a3b8; padding:3px 0;">• Row ${d.row}: <strong style="color:#e2e8f0;">${d.id}</strong> — ${d.name} (${d.line || 'No line'})</div>`).join('')}
                 </div>
             </div>
         ` : ''}
