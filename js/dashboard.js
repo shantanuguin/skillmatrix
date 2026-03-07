@@ -237,12 +237,18 @@ function updatePerformanceStats(data) {
             const sup = getSupervisorForLine(line);
             opt.textContent = sup !== 'Unknown' ? `${line} (${sup})` : line;
             lineFilter.appendChild(opt);
+        });
+    }
 
-            // Also populate bottleneck filter here?
-            if (bottleneckFilter) {
-                const bOpt = opt.cloneNode(true);
-                bottleneckFilter.appendChild(bOpt);
-            }
+    // Populate bottleneck filter
+    if (bottleneckFilter && bottleneckFilter.options.length <= 1) {
+        const lines = [...new Set(performanceData.map(d => d.lineNo).filter(Boolean))].sort();
+        lines.forEach(line => {
+            const opt = document.createElement('option');
+            opt.value = line;
+            const sup = getSupervisorForLine(line);
+            opt.textContent = sup !== 'Unknown' ? `${line} (${sup})` : line;
+            bottleneckFilter.appendChild(opt);
         });
     }
 }
